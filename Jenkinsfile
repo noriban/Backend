@@ -1,6 +1,6 @@
-def imageName="192.168.44.44:8082/docker-local/backend"
-def dockerRegistry="https://192.168.44.44:8082"
-def registryCredentials="artifactory"
+def imageName="noriban/devopscoreback"
+def dockerRegistry=""
+def registryCredentials="dockerhub"
 def dockerTag=""
 
 pipeline {
@@ -55,6 +55,23 @@ pipeline {
                         applicationImage.push('latest')
                     }
                 }
+            }
+        }
+        stage ('Push to repo') {
+            steps {
+                dir('ArgoCD') {
+                    withCredentials([gitUsernamePassword(credentialsId: 'git', gitToolName: 'Default')]) {
+                        git branch: 'main', url: 'https://github.com/noriban/panda_argocd.git'
+                        sh """ cd backend
+                        git config --global user.email "norbertrom01@gmail.com"
+                        git config --global user.name "noriban"
+                        sed -i "s#$imageName.*#$imageName:$dockerTag#g" backend.yml
+                        git commit -am "Set new $dockerTag tag."
+                        git diff
+                        git push origin main
+                        """
+                    }                  
+                } 
             }
         }
     }
